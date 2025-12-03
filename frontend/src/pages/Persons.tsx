@@ -5,6 +5,7 @@ interface Person {
     id: string;
     name: string;
     email: string;
+    documentNumber: string;
     address: string;
     createdAt: string;
 }
@@ -13,7 +14,7 @@ export const Persons: React.FC = () => {
     const [persons, setPersons] = useState<Person[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', address: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', documentNumber: '', address: '' });
     const [isSaving, setIsSaving] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -50,11 +51,12 @@ export const Persons: React.FC = () => {
 
             if (response.ok) {
                 setShowModal(false);
-                setFormData({ name: '', email: '', address: '' });
+                setFormData({ name: '', email: '', documentNumber: '', address: '' });
                 setEditingId(null);
                 fetchPersons();
             } else {
-                alert('Error al guardar la persona');
+                const errorData = await response.json();
+                alert(errorData.message || 'Error al guardar la persona');
             }
         } catch (error) {
             console.error('Error saving person:', error);
@@ -68,6 +70,7 @@ export const Persons: React.FC = () => {
         setFormData({
             name: person.name,
             email: person.email,
+            documentNumber: person.documentNumber,
             address: person.address,
         });
         setEditingId(person.id);
@@ -76,7 +79,7 @@ export const Persons: React.FC = () => {
 
     const handleCloseModal = () => {
         setShowModal(false);
-        setFormData({ name: '', email: '', address: '' });
+        setFormData({ name: '', email: '', documentNumber: '', address: '' });
         setEditingId(null);
     };
 
@@ -197,6 +200,17 @@ export const Persons: React.FC = () => {
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                                     placeholder="correo@ejemplo.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Número de Documento</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={formData.documentNumber}
+                                    onChange={(e) => setFormData({ ...formData, documentNumber: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                                    placeholder="Cédula o documento de identidad"
                                 />
                             </div>
                             <div>

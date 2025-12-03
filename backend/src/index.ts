@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import salesRoutes from './routes/salesRoutes';
 import personRoutes from './routes/personRoutes';
+import { startCleanupJob } from './jobs/cleanupExpiredSales';
 
 dotenv.config();
 
@@ -21,4 +22,6 @@ app.get('/', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
+    // Start the cleanup job
+    startCleanupJob();
 });

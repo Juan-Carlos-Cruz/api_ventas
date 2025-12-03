@@ -9,6 +9,7 @@ interface Person {
     id: string;
     name: string;
     email: string;
+    documentNumber: string;
     address: string;
 }
 
@@ -112,12 +113,13 @@ export const NewSale: React.FC = () => {
                 customer: {
                     name: selectedPerson.name,
                     email: selectedPerson.email,
+                    documentNumber: selectedPerson.documentNumber,
                     address: selectedPerson.address,
                 },
             };
 
             await createSale(saleData);
-            alert('¡Venta creada exitosamente!');
+            alert('¡Venta finalizada exitosamente!');
             setCartItems([]);
             handleCloseCheckout();
         } catch (error) {
@@ -200,8 +202,8 @@ export const NewSale: React.FC = () => {
                                         type="button"
                                         onClick={() => setDeliveryMethod('PICKUP')}
                                         className={`p-4 border-2 rounded-lg transition-colors ${deliveryMethod === 'PICKUP'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                : 'border-gray-300 hover:border-gray-400'
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            : 'border-gray-300 hover:border-gray-400'
                                             }`}
                                     >
                                         <div className="font-medium">Recoger en Tienda</div>
@@ -211,8 +213,8 @@ export const NewSale: React.FC = () => {
                                         type="button"
                                         onClick={() => setDeliveryMethod('DISPATCH')}
                                         className={`p-4 border-2 rounded-lg transition-colors ${deliveryMethod === 'DISPATCH'
-                                                ? 'border-blue-500 bg-blue-50 text-blue-700'
-                                                : 'border-gray-300 hover:border-gray-400'
+                                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                            : 'border-gray-300 hover:border-gray-400'
                                             }`}
                                     >
                                         <div className="font-medium">Envío a Domicilio</div>
@@ -259,9 +261,9 @@ export const NewSale: React.FC = () => {
                                 type="button"
                                 onClick={handleConfirmSale}
                                 disabled={isProcessing || !selectedPersonId}
-                                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                             >
-                                {isProcessing ? 'Procesando...' : 'Confirmar Venta'}
+                                {isProcessing ? 'Finalizando...' : 'Finalizar Venta'}
                             </button>
                         </div>
                     </div>

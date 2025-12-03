@@ -12,6 +12,7 @@ export const Dashboard: React.FC = () => {
     const [sales, setSales] = useState<Sale[]>([]);
     const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
     const [showDetailModal, setShowDetailModal] = useState(false);
+    const [isCompletingSale, setIsCompletingSale] = useState(false);
 
     useEffect(() => {
         fetchSales().then(setSales);
@@ -34,6 +35,51 @@ export const Dashboard: React.FC = () => {
     const handleCloseModal = () => {
         setShowDetailModal(false);
         setSelectedSale(null);
+    };
+
+    const handleCompleteSale = async () => {
+        if (!selectedSale) return;
+
+        setIsCompletingSale(true);
+        try {
+            const response = await fetch(`/api/sales/${selectedSale.id}/complete`, {
+                method: 'PATCH',
+            });
+
+            if (response.ok) {
+                alert('¡Venta finalizada exitosamente!');
+                handleCloseModal();
+                // Refresh sales list
+                fetchSales().then(setSales);
+            } else {
+                const error = await response.json();
+                alert(`Error al finalizar la venta: ${error.error || 'Error desconocido'}`);
+            }
+        } catch (error) {
+            console.error('Error completing sale:', error);
+            alert('Error al finalizar la venta');
+        } finally {
+            setIsCompletingSale(false);
+        }
+    };
+
+    const getRemainingTime = (expiresAt: string | null) => {
+        if (!expiresAt) return null;
+
+        const now = new Date();
+        const expiration = new Date(expiresAt);
+        const diffMs = expiration.getTime() - now.getTime();
+
+        if (diffMs <= 0) return 'Expirada';
+
+        const diffMinutes = Math.floor(diffMs / 60000);
+        const diffSeconds = Math.floor((diffMs % 60000) / 1000);
+
+        if (diffMinutes > 0) {
+            return `${diffMinutes} minuto${diffMinutes !== 1 ? 's' : ''}`;
+        } else {
+            return `${diffSeconds} segundo${diffSeconds !== 1 ? 's' : ''}`;
+        }
     };
 
     // Mock metrics (replace with real data if available)
@@ -189,6 +235,26 @@ export const Dashboard: React.FC = () => {
                                 </div>
                             </div>
 
+                            {/* Expiration Warning for Pending Sales */}
+                            {selectedSale.status === 'PENDING' && selectedSale.expiresAt && (
+                                <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
+                                    <div className="flex items-start">
+                                        <Clock className="h-5 w-5 text-orange-500 mt-0.5 mr-3 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="text-sm font-semibold text-orange-800">
+                                                ⚠️ Venta Pendiente de Finalización
+                                            </h4>
+                                            <p className="text-sm text-orange-700 mt-1">
+                                                Esta venta expira en <strong>{getRemainingTime(selectedSale.expiresAt)}</strong>.
+                                                {' '}Finaliza la venta antes de{' '}
+                                                <strong>{new Date(selectedSale.expiresAt).toLocaleString()}</strong>
+                                                {' '}o será eliminada automáticamente.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Customer Info */}
                             {selectedSale.person && (
                                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
@@ -266,9 +332,18 @@ export const Dashboard: React.FC = () => {
                         </div>
 
                         <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                            {selectedSale.status === 'PENDING' && (
+                                <button
+                                    onClick={handleCompleteSale}
+                                    disabled={isCompletingSale}
+                                    className="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    {isCompletingSale ? 'Finalizando...' : 'Finalizar Venta'}
+                                </button>
+                            )}
                             <button
                                 onClick={handleCloseModal}
-                                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                                className={`${selectedSale.status === 'PENDING' ? 'flex-1' : 'w-full'} px-4 py-3 ${selectedSale.status === 'PENDING' ? 'bg-gray-600 hover:bg-gray-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg transition-colors font-medium`}
                             >
                                 Cerrar
                             </button>

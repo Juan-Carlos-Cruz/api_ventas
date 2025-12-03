@@ -8,12 +8,38 @@ const prisma = new PrismaClient();
 const personSchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
+    documentNumber: z.string().min(1, "Document number is required"),
     address: z.string().min(1, "Address is required"),
 });
 
 export const createPerson = async (req: Request, res: Response) => {
     try {
         const data = personSchema.parse(req.body);
+
+        // Check if email already exists
+        const existingEmail = await prisma.person.findUnique({
+            where: { email: data.email },
+        });
+
+        if (existingEmail) {
+            return res.status(400).json({
+                error: 'Email already exists',
+                message: 'Ya existe una persona registrada con este correo electrónico'
+            });
+        }
+
+        // Check if document number already exists
+        const existingDocument = await prisma.person.findUnique({
+            where: { documentNumber: data.documentNumber },
+        });
+
+        if (existingDocument) {
+            return res.status(400).json({
+                error: 'Document number already exists',
+                message: 'Ya existe una persona registrada con este número de documento'
+            });
+        }
+
         const person = await prisma.person.create({ data });
         res.status(201).json(person);
     } catch (error) {
@@ -54,6 +80,31 @@ export const updatePerson = async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const data = personSchema.parse(req.body);
+
+        // Check if email is being changed and if it already exists
+        const existingEmail = await prisma.person.findUnique({
+            where: { email: data.email },
+        });
+
+        if (existingEmail && existingEmail.id !== id) {
+            return res.status(400).json({
+                error: 'Email already exists',
+                message: 'Ya existe una persona registrada con este correo electrónico'
+            });
+        }
+
+        // Check if document number is being changed and if it already exists
+        const existingDocument = await prisma.person.findUnique({
+            where: { documentNumber: data.documentNumber },
+        });
+
+        if (existingDocument && existingDocument.id !== id) {
+            return res.status(400).json({
+                error: 'Document number already exists',
+                message: 'Ya existe una persona registrada con este número de documento'
+            });
+        }
+
         const person = await prisma.person.update({
             where: { id },
             data

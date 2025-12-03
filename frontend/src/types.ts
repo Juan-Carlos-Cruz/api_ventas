@@ -41,6 +41,7 @@ export interface Sale {
     status: string;
     deliveryMethod: string;
     createdAt: string;
+    expiresAt?: string | null;
     person?: {
         name: string;
         email: string;

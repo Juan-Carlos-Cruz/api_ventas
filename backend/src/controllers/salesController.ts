@@ -10,6 +10,7 @@ const createSaleSchema = z.object({
     customer: z.object({
         name: z.string(),
         email: z.string().email(),
+        documentNumber: z.string(),
         address: z.string(),
     }),
     items: z.array(z.object({
@@ -42,21 +43,29 @@ export const createSale = async (req: Request, res: Response) => {
         // In a real scenario, we would call Inventory API here
         // await axios.post(`${process.env.INVENTORY_API_URL}/stock/reserve`, { items: data.items });
 
-        // 2. Create Person (or find existing - simplified here to always create/update)
-        const person = await prisma.person.create({
-            data: data.customer, // Frontend still sends 'customer' key
+        // 2. Find or Create Person
+        let person = await prisma.person.findUnique({
+            where: { email: data.customer.email },
         });
+
+        if (!person) {
+            // Create new person if doesn't exist
+            person = await prisma.person.create({
+                data: data.customer,
+            });
+        }
 
         // 3. Calculate Total
         const total = data.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
 
-        // 4. Create Sale
+        // 4. Create Sale as COMPLETED (finalized immediately)
         const sale = await prisma.sale.create({
             data: {
                 personId: person.id,
                 total: total,
                 deliveryMethod: data.deliveryMethod,
-                status: 'PENDING',
+                status: 'COMPLETED',
+                expiresAt: null, // No expiration for completed sales
                 items: {
                     create: data.items.map(item => ({
                         productId: item.productId,
@@ -113,6 +122,7 @@ export const getSales = async (req: Request, res: Response) => {
         });
         res.json(sales);
     } catch (error) {
+        console.error('Error fetching sales:', error);
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
@@ -171,5 +181,87 @@ export const getProducts = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error fetching products from Inventory API:', error);
         res.status(500).json({ error: 'Failed to fetch products' });
+    }
+};
+
+/**
+ * Complete a pending sale
+ */
+export const completeSale = async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        const sale = await prisma.sale.findUnique({
+            where: { id },
+        });
+
+        if (!sale) {
+            return res.status(404).json({ error: 'Sale not found' });
+        }
+
+        if (sale.status !== 'PENDING') {
+            return res.status(400).json({ error: 'Sale is not pending' });
+        }
+
+        // Check if sale has expired
+        if (sale.expiresAt && new Date() > sale.expiresAt) {
+            return res.status(400).json({ error: 'Sale has expired' });
+        }
+
+        const updatedSale = await prisma.sale.update({
+            where: { id },
+            data: {
+                status: 'COMPLETED',
+                expiresAt: null, // Remove expiration once completed
+            },
+            include: {
+                items: true,
+                person: true,
+            },
+        });
+
+        res.json(updatedSale);
+    } catch (error) {
+        console.error('Error completing sale:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+/**
+ * Cleanup expired pending sales
+ * This should be called periodically (e.g., via cron job)
+ */
+export const cleanupExpiredSales = async (req: Request, res: Response) => {
+    try {
+        const now = new Date();
+
+        // Find all expired pending sales
+        const expiredSales = await prisma.sale.findMany({
+            where: {
+                status: 'PENDING',
+                expiresAt: {
+                    lte: now,
+                },
+            },
+        });
+
+        // Delete expired sales and their items
+        const deletedCount = await prisma.sale.deleteMany({
+            where: {
+                status: 'PENDING',
+                expiresAt: {
+                    lte: now,
+                },
+            },
+        });
+
+        console.log(`Cleaned up ${deletedCount.count} expired sales`);
+        res.json({
+            message: `Cleaned up ${deletedCount.count} expired sales`,
+            deletedSales: expiredSales.map(s => s.id),
+        });
+    } catch (error) {
+        console.error('Error cleaning up expired sales:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
     }
 };

@@ -9,12 +9,13 @@ datasource db {
 }
 
 model Person {
-  id        String   @id @default(uuid())
-  name      String
-  email     String
-  address   String
-  sales     Sale[]
-  createdAt DateTime @default(now())
+  id             String   @id @default(uuid())
+  name           String
+  email          String   @unique
+  documentNumber String   @unique
+  address        String
+  sales          Sale[]
+  createdAt      DateTime @default(now())
 
   @@map("personas")
 }
@@ -29,6 +30,7 @@ model Sale {
   dispatchId     String?
   items          SaleItem[]
   createdAt      DateTime    @default(now())
+  expiresAt      DateTime?
 }
 
 model SaleItem {
