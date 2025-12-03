@@ -49,7 +49,7 @@ docker compose logs -f
 cd backend
 npm install
 npx prisma generate
-npx prisma migrate dev
+npx prisma migrate dev  # Crea las tablas en la base de datos
 npm run dev
 ```
 
@@ -66,6 +66,14 @@ cd inventory-api
 npm install
 npm run dev
 ```
+
+> **Nota importante:** Si obtienes errores como `relation "public.personas" does not exist`, asegúrate de ejecutar las migraciones de Prisma:
+> ```bash
+> cd backend
+> npx prisma migrate deploy  # Para producción/Docker
+> # O
+> npx prisma migrate dev     # Para desarrollo local
+> ```
 
 ## 🏗️ Arquitectura
 
@@ -398,6 +406,25 @@ La API de Inventario incluye 8 productos mock:
 
 ## 🐛 Solución de Problemas
 
+### Error: "relation 'public.personas' does not exist"
+
+Este error ocurre cuando las tablas de la base de datos no han sido creadas. **Solución:**
+
+```bash
+# Opción 1: Si usas Docker Compose (RECOMENDADO)
+docker compose down
+docker compose up -d --build
+
+# Las migraciones ahora se ejecutan automáticamente al iniciar el backend
+
+# Opción 2: Si el error persiste con Docker
+docker compose run --rm backend npx prisma migrate deploy
+
+# Opción 3: Para desarrollo local
+cd backend
+npx prisma migrate deploy
+```
+
 ### Puerto en uso
 ```bash
 # Cambiar puertos en docker-compose.yml
@@ -425,6 +452,15 @@ npx prisma migrate reset
 ```bash
 # Verificar URL en frontend/src/services/api.ts
 # Debe apuntar a http://localhost:3000
+```
+
+### Las migraciones no se aplican automáticamente
+```bash
+# Verificar que el backend tenga acceso a la base de datos
+docker compose logs backend
+
+# Ejecutar migraciones manualmente
+docker compose exec backend npx prisma migrate deploy
 ```
 
 ## 📚 Documentación Adicional

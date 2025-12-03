@@ -28,4 +28,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-CMD sh -c "cat /etc/os-release && npm start"
+CMD sh -c "npx prisma migrate deploy && npm start"
