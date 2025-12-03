@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  address   String
+  sales     Sale[]
+  createdAt DateTime @default(now())
+}
+
+model Sale {
+  id             String      @id @default(uuid())
+  customer       Customer    @relation(fields: [customerId], references: [id])
+  customerId     String
+  total          Decimal
+  status         SaleStatus  @default(PENDING)
+  deliveryMethod DeliveryMethod
+  dispatchId     String?
+  items          SaleItem[]
+  createdAt      DateTime    @default(now())
+}
+
+model SaleItem {
+  id        String  @id @default(uuid())
+  sale      Sale    @relation(fields: [saleId], references: [id])
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Decimal
+}
+
+enum SaleStatus {
+  PENDING
+  COMPLETED
+  SHIPPED
+  CANCELLED
+}
+
+enum DeliveryMethod {
+  PICKUP
+  DISPATCH
+}

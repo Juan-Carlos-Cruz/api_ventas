@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tailscale-state
+  namespace: sales-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tailscale-gateway
+  namespace: sales-platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tailscale-gateway
+  template:
+    metadata:
+      labels:
+        app: tailscale-gateway
+    spec:
+      containers:
+        - name: tailscale
+          image: tailscale-gateway:with-socat
+          imagePullPolicy: Never
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN", "SYS_MODULE"]
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: tailscale-auth
+                  key: TS_AUTHKEY
+          volumeMounts:
+            - name: tailscale-state
+              mountPath: /var/lib/tailscale
+          command:
+            - sh
+            - -c
+            - |
+              echo "Starting tailscaled..."
+              tailscaled --state=/var/lib/tailscale/tailscaled.state --tun=userspace-networking &
+              sleep 5
+              tailscale up \
+                --authkey=${TS_AUTHKEY} \
+                --hostname=sales-platform-gateway \
+                --accept-dns=false \
+                --accept-routes=true \
+                --advertise-exit-node
+
+              echo "Waiting for LoadBalancer IP..."
+              while true; do
+                LB_IP=$(nslookup frontend-service.sales-platform.svc.cluster.local | grep 'Address:' | tail -1 | awk '{print $2}')
+                if [ ! -z "$LB_IP" ]; then
+                  echo "LoadBalancer IP found: $LB_IP"
+                  break
+                fi
+                echo "Waiting for LoadBalancer IP..."
+                sleep 5
+              done
+
+              echo "Starting socat proxy to Frontend Service..."
+              # Proxy traffic from Tailscale Pod Port 8080 to Frontend Service Port 80
+              socat TCP-LISTEN:8080,fork TCP:frontend-service:80 &
+              echo "Gateway active on port 8080, keeping container alive..."
+              tail -f /dev/null
+      volumes:
+        - name: tailscale-state
+          persistentVolumeClaim:
+            claimName: tailscale-state

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tailscale-auth
+  namespace: sales-platform
+type: Opaque
+stringData:
+  TS_AUTHKEY: "tskey-auth-PLACEHOLDER-REPLACE_ME"
