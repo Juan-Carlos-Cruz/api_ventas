@@ -9,6 +9,7 @@ interface Person {
     id: string;
     name: string;
     email: string;
+    phone?: string;
     documentNumber: string;
     address: string;
 }
@@ -273,14 +274,29 @@ export const NewSale: React.FC = () => {
                                             </div>
                                         ) : deliveryDate ? (
                                             <div className="text-blue-700">
-                                                <div className="font-semibold">📦 Fecha estimada de entrega:</div>
-                                                <div className="text-lg mt-1">
-                                                    {new Date(deliveryDate).toLocaleDateString('es-ES', {
-                                                        weekday: 'long',
-                                                        year: 'numeric',
-                                                        month: 'long',
-                                                        day: 'numeric'
-                                                    })}
+                                                <div className="font-semibold mb-2">📦 Detalles de Entrega:</div>
+
+                                                <div className="grid grid-cols-1 gap-2 text-sm mb-3">
+                                                    <div className="flex items-start gap-2">
+                                                        <span className="font-medium min-w-[70px]">Dirección:</span>
+                                                        <span>{persons.find(p => p.id === selectedPersonId)?.address}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="font-medium min-w-[70px]">Teléfono:</span>
+                                                        <span>{persons.find(p => p.id === selectedPersonId)?.phone || 'No registrado'}</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="border-t border-blue-200 pt-2">
+                                                    <div className="font-medium text-sm text-blue-800">Fecha estimada:</div>
+                                                    <div className="text-lg font-bold">
+                                                        {new Date(deliveryDate).toLocaleDateString('es-ES', {
+                                                            weekday: 'long',
+                                                            year: 'numeric',
+                                                            month: 'long',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </div>
                                                 </div>
                                             </div>
                                         ) : (

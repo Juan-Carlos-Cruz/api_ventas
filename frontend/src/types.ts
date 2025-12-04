@@ -7,6 +7,7 @@ export interface Product {
     stockQuantity: number;
     availabilityType: 'STOCK' | 'MANUFACTURING' | 'MADE_TO_ORDER';
     estimatedDays?: number;
+    imageUrl?: string;
 }
 
 export interface AvailabilityType {

@@ -17,6 +17,7 @@ export interface DeliveryAvailability {
 export interface CreateDispatchRequest {
     saleId: string;
     customerName: string;
+    customerPhone?: string;
     customerAddress: string;
     customerEmail: string;
     deliveryDate: string;
@@ -73,9 +74,28 @@ export const checkDeliveryAvailability = async (address: string): Promise<Delive
  */
 export const createDispatch = async (dispatchData: CreateDispatchRequest): Promise<CreateDispatchResponse> => {
     try {
-        const response = await axios.post(`${DISPATCH_API_URL}/api/dispatch/create`, dispatchData);
+        // Transform data to match dispatch team's expected format
+        const dispatchPayload = {
+            id_venta: dispatchData.saleId,
+            cliente_nombre: dispatchData.customerName,
+            cliente_telefono: dispatchData.customerPhone || dispatchData.customerEmail,
+            direccion_entrega: dispatchData.customerAddress,
+            productos: dispatchData.items.map(item => ({
+                id_producto: item.productId,
+                nombre: item.description || item.productId,
+                cantidad: item.quantity
+            })),
+            fecha_estimada_envio: new Date(dispatchData.deliveryDate).toISOString().split('T')[0] // Format: YYYY-MM-DD
+        };
 
-        return response.data;
+        const response = await axios.post(`${DISPATCH_API_URL}/api/despachos`, dispatchPayload);
+
+        return {
+            dispatchId: response.data.id_despacho || `DISPATCH-${Date.now()}`,
+            status: response.data.estado || 'PENDING',
+            trackingNumber: response.data.numero_seguimiento || `TRK-${Date.now()}`,
+            estimatedDeliveryDate: dispatchData.deliveryDate,
+        };
     } catch (error) {
         console.error('Error creating dispatch:', error);
 

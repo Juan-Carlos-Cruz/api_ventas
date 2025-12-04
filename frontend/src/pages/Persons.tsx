@@ -5,6 +5,7 @@ interface Person {
     id: string;
     name: string;
     email: string;
+    phone?: string;
     documentNumber: string;
     address: string;
     createdAt: string;
@@ -14,7 +15,7 @@ export const Persons: React.FC = () => {
     const [persons, setPersons] = useState<Person[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', documentNumber: '', address: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phone: '', documentNumber: '', address: '' });
     const [isSaving, setIsSaving] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -51,7 +52,7 @@ export const Persons: React.FC = () => {
 
             if (response.ok) {
                 setShowModal(false);
-                setFormData({ name: '', email: '', documentNumber: '', address: '' });
+                setFormData({ name: '', email: '', phone: '', documentNumber: '', address: '' });
                 setEditingId(null);
                 fetchPersons();
             } else {
@@ -70,6 +71,7 @@ export const Persons: React.FC = () => {
         setFormData({
             name: person.name,
             email: person.email,
+            phone: person.phone || '',
             documentNumber: person.documentNumber,
             address: person.address,
         });
@@ -79,7 +81,7 @@ export const Persons: React.FC = () => {
 
     const handleCloseModal = () => {
         setShowModal(false);
-        setFormData({ name: '', email: '', documentNumber: '', address: '' });
+        setFormData({ name: '', email: '', phone: '', documentNumber: '', address: '' });
         setEditingId(null);
     };
 
@@ -117,6 +119,7 @@ export const Persons: React.FC = () => {
                             <tr>
                                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
                                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
                                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
                                 <th className="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
@@ -125,13 +128,13 @@ export const Persons: React.FC = () => {
                         <tbody className="divide-y divide-gray-200">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
+                                    <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
                                         Cargando...
                                     </td>
                                 </tr>
                             ) : persons.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-6 py-12 text-center">
+                                    <td colSpan={6} className="px-6 py-12 text-center">
                                         <Users className="h-12 w-12 text-gray-300 mx-auto mb-3" />
                                         <p className="text-gray-500">No hay personas registradas</p>
                                     </td>
@@ -144,6 +147,9 @@ export const Persons: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                                             {person.email}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-gray-600">
+                                            {person.phone || '-'}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                                             {person.address}
@@ -200,6 +206,16 @@ export const Persons: React.FC = () => {
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
                                     placeholder="correo@ejemplo.com"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                                <input
+                                    type="tel"
+                                    value={formData.phone}
+                                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 bg-white"
+                                    placeholder="Número de teléfono"
                                 />
                             </div>
                             <div>

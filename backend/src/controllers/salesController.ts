@@ -97,6 +97,7 @@ export const createSale = async (req: Request, res: Response) => {
                 const dispatchData = {
                     saleId: sale.id,
                     customerName: person.name,
+                    customerPhone: person.phone || undefined,
                     customerAddress: person.address,
                     customerEmail: person.email,
                     deliveryDate: data.deliveryDate || new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),

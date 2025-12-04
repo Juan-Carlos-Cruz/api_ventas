@@ -12,6 +12,7 @@ model Person {
   id             String   @id @default(uuid())
   name           String
   email          String   @unique
+  phone          String?
   documentNumber String   @unique
   address        String
   sales          Sale[]

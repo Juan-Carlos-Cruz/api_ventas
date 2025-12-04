@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 const personSchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
+    phone: z.string().optional(),
     documentNumber: z.string().min(1, "Document number is required"),
     address: z.string().min(1, "Address is required"),
 });
