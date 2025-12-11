@@ -16,6 +16,9 @@ const productIdMapping: Record<string, string> = {
     'prod-005': 'S1',
 };
 
+const toInventoryProductId = (productId: string): string =>
+    productIdMapping[productId.toLowerCase()] || productId;
+
 // Schemas
 const createSaleSchema = z.object({
     customer: z.object({
@@ -52,9 +55,47 @@ export const createSale = async (req: Request, res: Response) => {
     try {
         const data = createSaleSchema.parse(req.body);
 
-        // 1. Validate Stock (Mocked)
-        // In a real scenario, we would call Inventory API here
-        // await axios.post(`${process.env.INVENTORY_API_URL}/stock/reserve`, { items: data.items });
+        // 1. Interact with Inventory System según estado de la venta
+        const inventoryUrl = process.env.INVENTORY_API_URL;
+        if (!inventoryUrl) {
+            throw new Error('INVENTORY_API_URL is not configured');
+        }
+
+        // Para ventas pendientes: reservar stock.
+        // Para ventas completadas: retirar/descargar stock.
+        const inventoryEndpoint =
+            data.status === 'PENDING'
+                ? `${inventoryUrl}/api/productos/reservas`
+                : `${inventoryUrl}/api/productos/retiros`;
+        const metodoEntrega =
+            data.deliveryMethod === 'DISPATCH'
+                ? 'domicilio'
+                : 'tienda';
+
+        for (const item of data.items) {
+            const internalProductId = toInventoryProductId(item.productId);
+            if (!internalProductId) continue;
+
+            try {
+                const body = {
+                    id_producto: internalProductId,
+                    cantidad: item.quantity,
+                    ...(data.status !== 'PENDING' && {
+                        metodo_entrega: metodoEntrega,
+                    }),
+                };
+                const invResp = await axios.post(inventoryEndpoint, body, {
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                console.log(`✅ Inventario (${data.status}) ${internalProductId}:`, invResp.data);
+            } catch (error) {
+                console.error(
+                    `⚠️ Error gestionando inventario (${data.status}) para ${internalProductId}:`,
+                    error instanceof Error ? error.message : error
+                );
+                // continuar aunque falle el pedido en inventario
+            }
+        }
 
         // 2. Find or Create Person
         let person = await prisma.person.findUnique({
@@ -315,7 +356,6 @@ export const cleanupExpiredSales = async (req: Request, res: Response) => {
             },
         });
 
-        // Delete expired sales and their items
         const deletedCount = await prisma.sale.deleteMany({
             where: {
                 status: 'PENDING',
