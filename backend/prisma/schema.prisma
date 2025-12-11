@@ -32,6 +32,7 @@ model Sale {
   items          SaleItem[]
   createdAt      DateTime    @default(now())
   expiresAt      DateTime?
+  deliveryDate   DateTime?
 }
 
 model SaleItem {
@@ -41,6 +42,7 @@ model SaleItem {
   productId String
   quantity  Int
   unitPrice Decimal
+  reservationId String?
 }
 
 enum SaleStatus {

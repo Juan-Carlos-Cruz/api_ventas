@@ -11,8 +11,8 @@ COPY . .
 RUN rm -rf node_modules package-lock.json
 RUN uname -a && cat /etc/os-release
 RUN npm install
-RUN npm run build
 RUN npx prisma generate
+RUN npm run build
 
 # Production Stage
 FROM node:18-slim
