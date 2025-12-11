@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import type { ChangeEvent, FocusEvent } from 'react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { Package, Trash2, Clock, Lock } from 'lucide-react';
@@ -18,14 +18,28 @@ export const CartItem = ({ item, onUpdateQuantity, onRemove, disabled = false }:
     const handleQuantityChange = (newQuantity: number) => {
         if (newQuantity < 1) return;
 
-        // For STOCK items, check against available quantity
-        if (item.availabilityType === 'STOCK' && item.availability) {
-            if (newQuantity > item.availability.quantity!) {
-                return;
-            }
-        }
-
         onUpdateQuantity(item.productId, newQuantity);
+    };
+
+    const handleQuantityInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+
+        // Allow clearing the field without forcing a change
+        if (value === '') return;
+
+        const parsedQuantity = parseInt(value, 10);
+        if (Number.isNaN(parsedQuantity)) return;
+
+        handleQuantityChange(parsedQuantity);
+    };
+
+    const handleQuantityBlur = (event: FocusEvent<HTMLInputElement>) => {
+        const parsedQuantity = parseInt(event.target.value, 10);
+
+        if (Number.isNaN(parsedQuantity) || parsedQuantity < 1) {
+            handleQuantityChange(1);
+            return;
+        }
     };
 
     const calculateTimeRemaining = () => {
@@ -111,19 +125,21 @@ export const CartItem = ({ item, onUpdateQuantity, onRemove, disabled = false }:
                         >
                             -
                         </Button>
-                        <span className="font-medium text-gray-900 w-12 text-center">
-                            {item.quantity}
-                        </span>
+                        <input
+                            type="number"
+                            min={1}
+                            inputMode="numeric"
+                            value={item.quantity}
+                            onChange={handleQuantityInputChange}
+                            onBlur={handleQuantityBlur}
+                            disabled={disabled}
+                            className="h-8 w-20 text-center border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 font-medium"
+                        />
                         <Button
                             size="sm"
                             variant="outline"
                             onClick={() => handleQuantityChange(item.quantity + 1)}
-                            disabled={
-                                disabled ||
-                                (item.availabilityType === 'STOCK' &&
-                                    item.availability &&
-                                    item.quantity >= item.availability.quantity!)
-                            }
+                            disabled={disabled}
                             className="h-8 w-8 p-0"
                         >
                             +

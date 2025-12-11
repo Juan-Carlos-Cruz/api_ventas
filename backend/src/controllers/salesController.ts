@@ -4,6 +4,20 @@ import { z } from 'zod';
 import axios from 'axios';
 
 const prisma = new PrismaClient();
+// Mapeo de IDs del catálogo de frontend/inventory-api al código interno (S1/S2)
+const productIdMapping: Record<string, string> = {
+    'prod-s1': 'S1',
+    'prod-s2': 'S2',
+    // Mock inventory-api products -> internos
+    'prod-001': 'S1',
+    'prod-002': 'S2',
+    'prod-003': 'S1',
+    'prod-004': 'S2',
+    'prod-005': 'S1',
+};
+
+const toInventoryProductId = (productId: string): string =>
+    productIdMapping[productId.toLowerCase()] || productId;
 
 // Esquemas de validación
 const createSaleSchema = z.object({
@@ -41,9 +55,53 @@ export const createSale = async (req: Request, res: Response) => {
     try {
         const data = createSaleSchema.parse(req.body);
 
+<<<<<<< Updated upstream
         // 1. Validar productos y calcular tiempos de fabricación
         let totalManufacturingDays = 0;
         let hasManufacturingProducts = false;
+=======
+        // 1. Interact with Inventory System según estado de la venta
+        const inventoryUrl = process.env.INVENTORY_API_URL;
+        if (!inventoryUrl) {
+            throw new Error('INVENTORY_API_URL is not configured');
+        }
+
+        // Para ventas pendientes: reservar stock.
+        // Para ventas completadas: retirar/descargar stock.
+        const inventoryEndpoint =
+            data.status === 'PENDING'
+                ? `${inventoryUrl}/api/productos/reservas`
+                : `${inventoryUrl}/api/productos/retiros`;
+        const metodoEntrega =
+            data.deliveryMethod === 'DISPATCH'
+                ? 'domicilio'
+                : 'tienda';
+
+        for (const item of data.items) {
+            const internalProductId = toInventoryProductId(item.productId);
+            if (!internalProductId) continue;
+
+            try {
+                const body = {
+                    id_producto: internalProductId,
+                    cantidad: item.quantity,
+                    ...(data.status !== 'PENDING' && {
+                        metodo_entrega: metodoEntrega,
+                    }),
+                };
+                const invResp = await axios.post(inventoryEndpoint, body, {
+                    headers: { 'Content-Type': 'application/json' },
+                });
+                console.log(`✅ Inventario (${data.status}) ${internalProductId}:`, invResp.data);
+            } catch (error) {
+                console.error(
+                    `⚠️ Error gestionando inventario (${data.status}) para ${internalProductId}:`,
+                    error instanceof Error ? error.message : error
+                );
+                // continuar aunque falle el pedido en inventario
+            }
+        }
+>>>>>>> Stashed changes
 
         for (const item of data.items) {
             try {
@@ -389,6 +447,7 @@ export const completeSale = async (req: Request, res: Response) => {
 
         const sale = await prisma.sale.findUnique({
             where: { id },
+            include: { items: true },
         });
 
         if (!sale) {
@@ -402,6 +461,30 @@ export const completeSale = async (req: Request, res: Response) => {
         // Verificar si la venta ha expirado
         if (sale.expiresAt && new Date() > sale.expiresAt) {
             return res.status(400).json({ error: 'Sale has expired' });
+        }
+
+        const inventoryUrl = process.env.INVENTORY_API_URL;
+        if (!inventoryUrl) {
+            throw new Error('INVENTORY_API_URL is not configured');
+        }
+
+        const metodoEntrega =
+            sale.deliveryMethod === 'DISPATCH'
+                ? 'domicilio'
+                : 'tienda';
+
+        // Consumir primero de Reservado (retiro) para ventas que estaban pendientes
+        for (const item of sale.items) {
+            const internalProductId = toInventoryProductId(item.productId);
+            await axios.post(
+                `${inventoryUrl}/api/productos/retiros`,
+                {
+                    id_producto: internalProductId,
+                    cantidad: item.quantity,
+                    metodo_entrega: metodoEntrega,
+                },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
         }
 
         const updatedSale = await prisma.sale.update({
@@ -441,7 +524,10 @@ export const cleanupExpiredSales = async (req: Request, res: Response) => {
             },
         });
 
+<<<<<<< Updated upstream
         // Eliminar ventas expiradas y sus items
+=======
+>>>>>>> Stashed changes
         const deletedCount = await prisma.sale.deleteMany({
             where: {
                 status: 'PENDING',
