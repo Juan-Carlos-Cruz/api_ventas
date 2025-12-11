@@ -34,7 +34,6 @@ export interface SaleItem {
     productId: string;
     quantity: number;
     unitPrice: number;
-    product?: Product; // Propiedad enriquecida opcional
 }
 
 export interface Sale {
@@ -44,12 +43,10 @@ export interface Sale {
     deliveryMethod: string;
     createdAt: string;
     expiresAt?: string | null;
-    deliveryDate?: string | null;
     person?: {
         name: string;
         email: string;
         address: string;
-        phone?: string;
     };
     items?: SaleItem[];
 }

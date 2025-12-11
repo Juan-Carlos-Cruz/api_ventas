@@ -140,13 +140,9 @@ export const Store: React.FC = () => {
             setOrderSuccess(true);
             setCart([]);
             setFormData({ name: '', documentNumber: '', phone: '', email: '', address: '' });
-            setIsDeliveryConfirmed(false);
-            setDeliveryDate(null);
-            // Reload products to show updated stock quantities
-            loadProducts();
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error creating order:', error);
-            alert(error.message || 'Hubo un error al procesar tu pedido. Por favor intenta nuevamente.');
+            alert('Hubo un error al procesar tu pedido. Por favor intenta nuevamente.');
         } finally {
             setIsSubmitting(false);
         }
