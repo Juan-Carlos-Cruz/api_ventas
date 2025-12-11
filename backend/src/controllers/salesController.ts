@@ -55,11 +55,6 @@ export const createSale = async (req: Request, res: Response) => {
     try {
         const data = createSaleSchema.parse(req.body);
 
-<<<<<<< Updated upstream
-        // 1. Validar productos y calcular tiempos de fabricación
-        let totalManufacturingDays = 0;
-        let hasManufacturingProducts = false;
-=======
         // 1. Interact with Inventory System según estado de la venta
         const inventoryUrl = process.env.INVENTORY_API_URL;
         if (!inventoryUrl) {
@@ -101,49 +96,8 @@ export const createSale = async (req: Request, res: Response) => {
                 // continuar aunque falle el pedido en inventario
             }
         }
->>>>>>> Stashed changes
 
-        for (const item of data.items) {
-            try {
-                // Obtener información del producto desde inventario
-                const inventoryProductId = item.productId.replace('prod-', '').toUpperCase();
-                const productResponse = await axios.get(
-                    `${process.env.INVENTORY_API_URL}/api/v1/products/${item.productId}`
-                );
-                const product = productResponse.data;
-
-                // Verificar si es producto en fabricación
-                if (product.availabilityType === 'MANUFACTURING') {
-                    hasManufacturingProducts = true;
-
-                    // Si la venta es PICKUP, se permite pero este item específico se manejará como DESPACHO
-                    // Se requiere que el cliente tenga dirección válida (validada por esquema)
-
-                    // Acumular el mayor tiempo de fabricación
-                    if (product.estimatedDays && product.estimatedDays > totalManufacturingDays) {
-                        totalManufacturingDays = product.estimatedDays;
-                    }
-                }
-            } catch (error) {
-                console.error(`[INVENTARIO] Error al consultar producto ${item.productId}:`, error);
-                // Continuar si no se puede verificar - no bloquear la venta
-            }
-        }
-
-        // Calcular fecha de entrega considerando tiempo de fabricación
-        // Calcular fecha de entrega considerando tiempo de fabricación
-        // Si hay productos de fabricación, siempre se calcula fecha de entrega para envío
-        let calculatedDeliveryDate = data.deliveryDate;
-        if (hasManufacturingProducts) {
-            const DELIVERY_DAYS = 3; // Días estimados de despacho
-            const totalDays = totalManufacturingDays + DELIVERY_DAYS;
-            const deliveryDate = new Date();
-            deliveryDate.setDate(deliveryDate.getDate() + totalDays);
-            calculatedDeliveryDate = deliveryDate.toISOString();
-            console.log(`[FABRICACIÓN] Producto en fabricación detectado. Tiempo total: ${totalManufacturingDays} días fabricación + ${DELIVERY_DAYS} días despacho = ${totalDays} días`);
-        }
-
-        // 2. Buscar o Crear Persona
+        // 2. Find or Create Person
         let person = await prisma.person.findUnique({
             where: { email: data.customer.email },
         });
@@ -524,10 +478,6 @@ export const cleanupExpiredSales = async (req: Request, res: Response) => {
             },
         });
 
-<<<<<<< Updated upstream
-        // Eliminar ventas expiradas y sus items
-=======
->>>>>>> Stashed changes
         const deletedCount = await prisma.sale.deleteMany({
             where: {
                 status: 'PENDING',
